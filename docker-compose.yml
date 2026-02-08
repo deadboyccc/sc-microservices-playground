@@ -32,7 +32,7 @@ services:
 
   # --- Your Custom Applications ---
   stream-producer:
-    build: ./StreamProducer
+    build: ./stream-producer
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker,kafka
@@ -45,7 +45,7 @@ services:
         condition: service_started
 
   stream-consumer:
-    build: ./StreamConsumer
+    build: ./stream-consumer
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker,kafka
