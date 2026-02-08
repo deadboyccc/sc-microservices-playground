@@ -6,11 +6,11 @@ plugins {
 
 group = "dev.dead"
 version = "0.0.1-SNAPSHOT"
-description = "StreamProducer"
+description = "stream-producer"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 

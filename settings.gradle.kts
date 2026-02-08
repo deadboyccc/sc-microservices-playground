@@ -11,5 +11,6 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+// include 3 projects, spring-eureka-server, stream-producer, stream-consumer
 
-include("StreamProducer")
+include("stream-consumer", "stream-producer", "spring-eureka-server")
