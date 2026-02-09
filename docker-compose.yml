@@ -1,61 +1,204 @@
+version: '3.8'
+
 services:
   # --- Service Discovery ---
   eureka:
-
     build: ./spring-eureka-server
+    container_name: eureka-server
     mem_limit: 512m
     ports:
       - "8761:8761"
     expose:
       - "8761"
+    environment:
+      - SPRING_APPLICATION_NAME=eureka-server
+      - SERVER_PORT=8761
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_SERVER_WAIT_TIME_IN_MS_WHEN_SYNC_EMPTY=0
+      - EUREKA_SERVER_RENEWAL_PERCENT_THRESHOLD=0.85
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info
+      - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 40s
+    networks:
+      - microservices-network
 
   # --- Message Broker Stack ---
   zookeeper:
     image: confluentinc/cp-zookeeper:7.9.0
+    container_name: zookeeper
     mem_limit: 512m
     environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
 
   kafka:
     image: confluentinc/cp-kafka:7.9.0
+    container_name: kafka
     mem_limit: 1024m
     ports:
       - "9092:9092"
+    expose:
+      - "9092"
     environment:
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - microservices-network
 
   # --- Your Custom Applications ---
   stream-producer:
     build: ./stream-producer
+    container_name: stream-producer
     mem_limit: 512m
+    ports:
+      - "8081:8081"
+    expose:
+      - "8081"
     environment:
+      # Spring Boot Configuration
+      - SPRING_APPLICATION_NAME=stream-producer
+      - SERVER_PORT=8081
       - SPRING_PROFILES_ACTIVE=docker,kafka
+      
+      # Eureka Client Configuration
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS=5
+      - EUREKA_CLIENT_INSTANCE_INFO_REPLICATION_INTERVAL_SECONDS=5
+      
+      # Eureka Instance Configuration
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - EUREKA_INSTANCE_HOSTNAME=stream-producer
+      - EUREKA_INSTANCE_INSTANCE_ID=stream-producer:${RANDOM_VALUE:-1}
+      - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=5
+      - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=10
+      - EUREKA_INSTANCE_METADATA_MAP_STARTUP=${RANDOM_VALUE:-1}
+      
+      # Kafka Configuration
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_PRODUCER_KEY_SERIALIZER=org.apache.kafka.common.serialization.StringSerializer
+      - SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER=org.apache.kafka.common.serialization.StringSerializer
+      - SPRING_KAFKA_PRODUCER_ACKS=all
+      - SPRING_KAFKA_PRODUCER_RETRIES=3
+      
+      # Actuator Configuration
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+      - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always
+      - MANAGEMENT_HEALTH_EUREKA_ENABLED=true
+      
+      # Logging
+      - LOGGING_LEVEL_COM_NETFLIX_EUREKA=DEBUG
+      - LOGGING_LEVEL_COM_NETFLIX_DISCOVERY=DEBUG
+      
     depends_on:
       eureka:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: on-failure
+    networks:
+      - microservices-network
 
   stream-consumer:
     build: ./stream-consumer
+    container_name: stream-consumer
     mem_limit: 512m
+    ports:
+      - "8082:8082"
+    expose:
+      - "8082"
     environment:
+      # Spring Boot Configuration
+      - SPRING_APPLICATION_NAME=stream-consumer
+      - SERVER_PORT=8082
       - SPRING_PROFILES_ACTIVE=docker,kafka
+      
+      # Eureka Client Configuration
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS=5
+      - EUREKA_CLIENT_INSTANCE_INFO_REPLICATION_INTERVAL_SECONDS=5
+      
+      # Eureka Instance Configuration
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - EUREKA_INSTANCE_HOSTNAME=stream-consumer
+      - EUREKA_INSTANCE_INSTANCE_ID=stream-consumer:${RANDOM_VALUE:-2}
+      - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=5
+      - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=10
+      - EUREKA_INSTANCE_METADATA_MAP_STARTUP=${RANDOM_VALUE:-2}
+      
+      # Kafka Configuration
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_KAFKA_CONSUMER_GROUP_ID=stream-consumer-group
+      - SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER=org.apache.kafka.common.serialization.StringDeserializer
+      - SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER=org.apache.kafka.common.serialization.StringDeserializer
+      - SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET=earliest
+      - SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT=true
+      
+      # Actuator Configuration
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+      - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always
+      - MANAGEMENT_HEALTH_EUREKA_ENABLED=true
+      
+      # Logging
+      - LOGGING_LEVEL_COM_NETFLIX_EUREKA=DEBUG
+      - LOGGING_LEVEL_COM_NETFLIX_DISCOVERY=DEBUG
+      
     depends_on:
       eureka:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: on-failure
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
