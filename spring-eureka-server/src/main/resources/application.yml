@@ -9,9 +9,26 @@ eureka:
     fetchRegistry: false
     serviceUrl:
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
-  # from: https://github.com/spring-cloud-samples/eureka/blob/master/src/main/resources/application.yml
   server:
     waitTimeInMsWhenSyncEmpty: 0
     response-cache-update-interval-ms: 5000
 
 management.endpoints.web.exposure.include: "*"
+
+---
+# --- Docker Profile ---
+# This matches the SPRING_PROFILES_ACTIVE=docker in your compose file
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+eureka:
+  instance:
+    # This matches the service name in docker-compose
+    hostname: eureka
+  client:
+    serviceUrl:
+      # We use the hostname 'eureka' so the server recognizes itself
+      # correctly within the microservices-network
+      defaultZone: http://eureka:8761/eureka/
