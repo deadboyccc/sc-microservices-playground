@@ -18,13 +18,14 @@ eureka:
     leaseExpirationDurationInSeconds: 5
 
 # --- Spring Cloud Stream & Kafka ---
-spring.cloud.function.definition: messageProcessor
+spring.cloud.function.definition: messageProducer
 
 spring.cloud.stream:
+  poller.fixedDelay: 1000
   defaultBinder: kafka
   default.contentType: application/json
   bindings:
-    messageProcessor-out-0:
+    messageProducer-out-0:
       destination: products
 
 spring.cloud.stream.kafka:
