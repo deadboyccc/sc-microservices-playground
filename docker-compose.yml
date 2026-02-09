@@ -48,21 +48,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      # Spring Boot
-      - SPRING_APPLICATION_NAME=stream-producer
       - SPRING_PROFILES_ACTIVE=docker
-
-      # Eureka (Essential for registration)
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
-      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-
-      # Spring Cloud Stream - Kafka
-      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
-
-      # Bindings (adjust based on your code)
-      - SPRING_CLOUD_FUNCTION_DEFINITION=sendMessage
-      - SPRING_CLOUD_STREAM_BINDINGS_SENDMESSAGE-OUT-0_DESTINATION=my-topic
-
     depends_on:
       - eureka
       - kafka
@@ -79,21 +65,7 @@ services:
       - "8082:8082"
     environment:
       # Spring Boot
-      - SPRING_APPLICATION_NAME=stream-consumer
       - SPRING_PROFILES_ACTIVE=docker
-
-      # Eureka (Essential for registration)
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
-      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-
-      # Spring Cloud Stream - Kafka
-      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
-
-      # Bindings (adjust based on your code)
-      - SPRING_CLOUD_FUNCTION_DEFINITION=receiveMessage
-      - SPRING_CLOUD_STREAM_BINDINGS_RECEIVEMESSAGE-IN-0_DESTINATION=my-topic
-      - SPRING_CLOUD_STREAM_BINDINGS_RECEIVEMESSAGE-IN-0_GROUP=stream-consumer-group
-
     depends_on:
       - eureka
       - kafka
