@@ -7,9 +7,12 @@ import java.util.function.Supplier;
 
 @Configuration
 public class StreamConfig {
-
     @Bean
     public Supplier<String> messageProducer() {
-        return () -> "New message at " + System.currentTimeMillis();
+        return () -> {
+            String msg = "New message at " + System.currentTimeMillis();
+            System.out.println(">>> SUPPLIER PRODUCING: " + msg);
+            return msg;
+        };
     }
 }
