@@ -1,0 +1,54 @@
+server.port: 7002
+server.error.include-message: always
+
+spring.application.name: stream-producer
+
+# --- Infrastructure Hosts (Localhost Defaults) ---
+app.eureka-server: localhost
+
+# --- Eureka Client Settings ---
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${app.eureka-server}:8761/eureka/
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
+# --- Spring Cloud Stream & Kafka ---
+spring.cloud.function.definition: messageProcessor
+
+spring.cloud.stream:
+  defaultBinder: kafka
+  default.contentType: application/json
+  bindings:
+#    messageProcessor-in-0:
+#      destination: products
+#      group: productsGroup
+
+spring.cloud.stream.kafka:
+  binder:
+    brokers: 127.0.0.1
+    defaultBrokerPort: 9092
+  bindings:
+#    messageProcessor-in-0:
+#      consumer:
+#        enableDlq: true
+
+# --- Monitoring ---
+management.endpoint.health.show-details: "ALWAYS"
+management.endpoints.web.exposure.include: "*"
+
+---
+# --- Docker Profile ---
+spring.config.activate.on-profile: docker
+
+server.port: 8080
+
+# Overriding localhost with Docker service names
+app.eureka-server: eureka
+spring.cloud.stream.kafka.binder.brokers: kafka
+spring.kafka.bootstrap-servers: kafka:9092
+spring.cloud.stream.kafka.binder.replication-factor: 1

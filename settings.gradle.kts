@@ -5,7 +5,6 @@
  * For more detailed information on multi-project builds, please refer to https://docs.gradle.org/9.3.0/userguide/multi_project_builds.html in the Gradle documentation.
  */
 
-rootProject.name = "sc-microservices-playground"
 pluginManagement {
     repositories {
         gradlePluginPortal()
