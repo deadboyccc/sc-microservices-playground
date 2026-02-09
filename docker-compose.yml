@@ -1,3 +1,4 @@
+
 services:
   # --- Service Discovery ---
   eureka:
@@ -8,12 +9,6 @@ services:
       - "8761:8761"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
     networks:
       - microservices-network
 
@@ -25,11 +20,6 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - microservices-network
 
@@ -43,25 +33,14 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
-      zookeeper:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      - zookeeper
     networks:
       - microservices-network
 
-  # --- Custom Applications (Config moved to YAML) ---
+  # --- Stream Producer ---
   stream-producer:
     build: ./stream-producer
     container_name: stream-producer
@@ -69,22 +48,29 @@ services:
     ports:
       - "8081:8081"
     environment:
+      # Spring Boot
+      - SPRING_APPLICATION_NAME=stream-producer
       - SPRING_PROFILES_ACTIVE=docker
+
+      # Eureka (Essential for registration)
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+
+      # Spring Cloud Stream - Kafka
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+      # Bindings (adjust based on your code)
+      - SPRING_CLOUD_FUNCTION_DEFINITION=sendMessage
+      - SPRING_CLOUD_STREAM_BINDINGS_SENDMESSAGE-OUT-0_DESTINATION=my-topic
+
     depends_on:
-      eureka:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
+      - eureka
+      - kafka
     restart: on-failure
     networks:
       - microservices-network
 
+  # --- Stream Consumer ---
   stream-consumer:
     build: ./stream-consumer
     container_name: stream-consumer
@@ -92,18 +78,25 @@ services:
     ports:
       - "8082:8082"
     environment:
+      # Spring Boot
+      - SPRING_APPLICATION_NAME=stream-consumer
       - SPRING_PROFILES_ACTIVE=docker
+
+      # Eureka (Essential for registration)
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+
+      # Spring Cloud Stream - Kafka
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+      # Bindings (adjust based on your code)
+      - SPRING_CLOUD_FUNCTION_DEFINITION=receiveMessage
+      - SPRING_CLOUD_STREAM_BINDINGS_RECEIVEMESSAGE-IN-0_DESTINATION=my-topic
+      - SPRING_CLOUD_STREAM_BINDINGS_RECEIVEMESSAGE-IN-0_GROUP=stream-consumer-group
+
     depends_on:
-      eureka:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8082/actuator/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
+      - eureka
+      - kafka
     restart: on-failure
     networks:
       - microservices-network
