@@ -1,12 +1,15 @@
 services:
   # --- Service Discovery ---
   eureka:
+
     build: ./spring-eureka-server
     mem_limit: 512m
     ports:
       - "8761:8761"
+    expose:
+      - "8761"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 5

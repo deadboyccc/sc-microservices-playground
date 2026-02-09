@@ -24,18 +24,18 @@ spring.cloud.stream:
   defaultBinder: kafka
   default.contentType: application/json
   bindings:
-#    messageProcessor-in-0:
-#      destination: products
-#      group: productsGroup
+    messageProcessor-in-0:
+      destination: products
+      group: productsGroup
 
 spring.cloud.stream.kafka:
   binder:
     brokers: 127.0.0.1
     defaultBrokerPort: 9092
   bindings:
-#    messageProcessor-in-0:
-#      consumer:
-#        enableDlq: true
+    messageProcessor-in-0:
+      consumer:
+        enableDlq: true
 
 # --- Monitoring ---
 management.endpoint.health.show-details: "ALWAYS"
