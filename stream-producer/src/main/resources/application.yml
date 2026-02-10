@@ -21,17 +21,19 @@ eureka:
 spring.cloud.function.definition: messageProducer
 
 spring.cloud.stream:
-  poller.fixedDelay: 1000
+  poller.fixedDelay: 2500
   defaultBinder: kafka
-  default.contentType: application/json
   bindings:
     messageProducer-out-0:
       destination: products
+      producer:
+        useNativeEncoding: true
+      content-type: text/plain
 
 spring.cloud.stream.kafka:
   binder:
     brokers: 127.0.0.1
-    defaultBrokerPort: 9092
+    defaultBrokerPort: 19092
 
 # --- Monitoring ---
 management.endpoint.health.show-details: "ALWAYS"
@@ -70,16 +72,24 @@ spring:
       bootstrap-servers: kafka:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all
-      retries: 3
 
   # Stream Binder overrides
   cloud:
     stream:
+      bindings:
+        messageProducer-out-0:
+          destination: products
+          producer:
+            useNativeEncoding: true
+          content-type: text/plain
       kafka:
         binder:
-          brokers: kafka:9092
+          brokers: kafka
+          defaultBrokerPort: 9092
           replication-factor: 1
+          configuration:
+            key.serializer: org.apache.kafka.common.serialization.StringSerializer
+            value.serializer: org.apache.kafka.common.serialization.StringSerializer
 
 # From: MANAGEMENT_...
 management:
