@@ -17,25 +17,27 @@ eureka:
     leaseRenewalIntervalInSeconds: 5
     leaseExpirationDurationInSeconds: 5
 
-# --- Spring Cloud Stream & Kafka ---
+# --- Spring Cloud Function ---
 spring.cloud.function.definition: messageProcessor
 
+# --- Spring Cloud Stream & Kafka (Standard/Local Profile) ---
 spring.cloud.stream:
   defaultBinder: kafka
-  default.contentType: application/json
   bindings:
     messageProcessor-in-0:
       destination: products
       group: productsGroup
-
-spring.cloud.stream.kafka:
-  binder:
-    brokers: 127.0.0.1
-    defaultBrokerPort: 9092
-  bindings:
-    messageProcessor-in-0:
-      consumer:
-        enableDlq: true
+      content-type: text/plain
+  kafka:
+    binder:
+      brokers: 127.0.0.1:19092
+      configuration:
+        key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    bindings:
+      messageProcessor-in-0:
+        consumer:
+          enableDlq: true
 
 # --- Monitoring ---
 management.endpoint.health.show-details: "ALWAYS"
@@ -45,48 +47,35 @@ management.endpoints.web.exposure.include: "*"
 # --- Docker Profile ---
 spring.config.activate.on-profile: docker
 
-# From: SERVER_PORT=8082
 server.port: 8082
 
-# From: EUREKA_CLIENT_...
 eureka:
   client:
     serviceUrl:
       defaultZone: http://eureka:8761/eureka/
     registerWithEureka: true
     fetchRegistry: true
-    registryFetchIntervalSeconds: 5
-    initialInstanceInfoReplicationIntervalSeconds: 5
   instance:
     preferIpAddress: true
     hostname: stream-consumer
     instanceId: stream-consumer:${random.value}
-    leaseRenewalIntervalInSeconds: 5
-    leaseExpirationDurationInSeconds: 10
-    metadataMap:
-      startup: ${random.value}
 
-# From: SPRING_KAFKA_...
 spring:
-  kafka:
-    bootstrap-servers: kafka:9092
-    consumer:
-      bootstrap-servers: kafka:9092
-      group-id: stream-consumer-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      auto-offset-reset: earliest
-      enable-auto-commit: true
-
-  # Ensure Stream Binder uses the Docker host
   cloud:
     stream:
+      bindings:
+        messageProcessor-in-0:
+          destination: products
+          group: productsGroup
+          content-type: text/plain
       kafka:
         binder:
           brokers: kafka:9092
           replication-factor: 1
+          configuration:
+            key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+            value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-# From: MANAGEMENT_...
 management:
   endpoints:
     web:
@@ -99,8 +88,8 @@ management:
     eureka:
       enabled: true
 
-# From: LOGGING_LEVEL_...
 logging:
   level:
     com.netflix.eureka: DEBUG
     com.netflix.discovery: DEBUG
+    dev.dead.streamconsumer: DEBUG

@@ -80,7 +80,6 @@ spring:
         messageProducer-out-0:
           destination: products
           producer:
-            useNativeEncoding: true
           content-type: text/plain
       kafka:
         binder:
