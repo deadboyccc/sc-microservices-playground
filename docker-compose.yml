@@ -1,4 +1,14 @@
 services:
+  # --- MongoDB ---
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    mem_limit: 512m
+    ports:
+      - "27017:27017"
+    networks:
+      - microservices-network
+
   # --- Service Discovery ---
   eureka:
     build: ./spring-eureka-server
@@ -76,10 +86,13 @@ services:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/db
     depends_on:
       kafka:
         condition: service_healthy
       eureka:
+        condition: service_started
+      mongodb:
         condition: service_started
     restart: on-failure
     networks:

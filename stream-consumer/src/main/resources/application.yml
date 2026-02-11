@@ -3,6 +3,9 @@ server.error.include-message: always
 
 spring.application.name: stream-consumer
 
+# --- Reactive MongoDb Configuration ---
+# For Local Development, we connect to a MongoDB instance running on localhost.
+
 # --- Infrastructure Hosts (Localhost Defaults) ---
 app.eureka-server: localhost
 
@@ -48,6 +51,8 @@ management.endpoints.web.exposure.include: "*"
 spring.config.activate.on-profile: docker
 
 server.port: 8082
+
+spring.data.mongodb.uri: mongodb://mongodb:27017/db
 
 eureka:
   client:
