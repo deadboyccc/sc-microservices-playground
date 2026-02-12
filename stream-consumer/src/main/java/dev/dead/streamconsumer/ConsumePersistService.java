@@ -1,18 +1,24 @@
 package dev.dead.streamconsumer;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Service;
 
 import java.util.function.Consumer;
 
 @Slf4j
 @Configuration
-@RequiredArgsConstructor
+@Service
 public class ConsumePersistService {
 
     private final StreamEventRepository repository;
+
+    public ConsumePersistService(StreamEventRepository repository) {
+        this.repository = repository;
+    }
+
+
     @Bean
     public Consumer<String> messageProcessor() {
         return payload -> {

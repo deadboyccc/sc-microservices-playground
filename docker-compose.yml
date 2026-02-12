@@ -6,6 +6,8 @@ services:
     mem_limit: 512m
     ports:
       - "27017:27017"
+    expose:
+      - "27017"
     networks:
       - microservices-network
 

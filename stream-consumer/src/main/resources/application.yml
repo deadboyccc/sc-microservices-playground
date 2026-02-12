@@ -5,6 +5,8 @@ spring.application.name: stream-consumer
 
 # --- Reactive MongoDb Configuration ---
 # For Local Development, we connect to a MongoDB instance running on localhost.
+spring.data.mongodb.uri: mongodb://localhost:27017/db
+
 
 # --- Infrastructure Hosts (Localhost Defaults) ---
 app.eureka-server: localhost
