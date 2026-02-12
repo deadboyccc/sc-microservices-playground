@@ -12,4 +12,4 @@ pluginManagement {
 }
 // include 3 projects, spring-eureka-server, stream-producer, stream-consumer
 
-include("stream-consumer", "stream-producer", "spring-eureka-server")
+include("stream-consumer", "stream-producer", "spring-eureka-server", "gw")

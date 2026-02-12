@@ -1,0 +1,10 @@
+spring.application.name: gw
+# predict to json place holder
+
+spring.cloud.gateway.server.webflux.routes:
+
+  - id: json-placeholder
+    uri: https://jsonplaceholder.typicode.com/comments
+    predicates:
+      - Path=/comments/**
+      - Method=GET
