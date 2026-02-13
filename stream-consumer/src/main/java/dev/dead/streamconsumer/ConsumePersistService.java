@@ -14,14 +14,6 @@ import java.util.function.Consumer;
 @Service
 public class ConsumePersistService {
 
-    private final StreamEventRepository repository;
-    private final WebClient webClient;
-
-    public ConsumePersistService(StreamEventRepository repository,
-                                 WebClient.Builder webClientBuilder) {
-        this.repository = repository;
-        this.webClient = webClientBuilder.build();
-    }
 
     @Bean
     @LoadBalanced
@@ -30,7 +22,9 @@ public class ConsumePersistService {
     }
 
     @Bean
-    public Consumer<String> messageProcessor() {
+    public Consumer<String> messageProcessor(
+            WebClient.Builder webClientBuilder) {
+
         return payload -> {
             log.debug("Received message: {} - simulating persis ",
                     payload);
@@ -41,7 +35,8 @@ public class ConsumePersistService {
                     .build();
 
 
-            webClient.get()
+            webClientBuilder.build()
+                    .get()
                     .uri("http://final-service:8080/hello-world")
                     .retrieve()
                     .bodyToMono(String.class)
